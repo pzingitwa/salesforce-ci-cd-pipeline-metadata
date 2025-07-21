@@ -1,29 +1,25 @@
-name: Salesforce Deployment
+name: Deploy to Salesforce Sandbox
 
 on:
   push:
-    branches:
-      - main  # Trigger when you push to main branch
+    branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v3
+      - name: Checkout source
+        uses: actions/checkout@v2
 
       - name: Install Salesforce CLI
-        run: |
-          npm install --global sfdx-cli
+        run: npm install sfdx-cli --global
 
-      - name: Authenticate to Salesforce Org
-        env:
-          SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
+      - name: Authenticate to Salesforce
         run: |
-          echo $SFDX_AUTH_URL > auth-url.txt
-          sfdx auth:sfdxurl:store -f auth-url.txt -a DeploymentOrg
-          sfdx force:config:set defaultusername=DeploymentOrg
+          echo "${{ secrets.SFDX_AUTH_URL }}" > auth-url.txt
+          sfdx auth:sfdxurl:store -f auth-url.txt -a sfdev
 
-      - name: Deploy Metadata
-        run:
+      - name: Deploy to Sandbox
+        run: |
+          sfdx force:source:deploy -p force-app -u sfdev --testlevel RunLocalTests

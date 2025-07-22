@@ -48,62 +48,36 @@ ci-cd-project
 6. Apex tests are run and validated
 
 ---
+## 🔐 Secure Authentication
 
-## ⚙️ GitHub Actions Workflow
-
-```yaml
-name: Deploy to Salesforce Sandbox
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout source
-      uses: actions/checkout@v2
-
-    - name: Install Salesforce CLI
-      run: npm install sfdx-cli --global
-
-    - name: Authenticate to Salesforce
-      run: |
-        echo "${{ secrets.SFDX_AUTH_URL }}" > auth-url.txt
-        sfdx auth:sfdxurl:store -f auth-url.txt -a MySandbox
-
-    - name: Deploy to Sandbox
-      run: |
-        sfdx force:source:deploy -p force-app -u MySandbox --testlevel RunLocalTests
-'''
----
-
-##🔐 Secure Authentication
 Authentication is handled using a secure SFDX_AUTH_URL stored as a GitHub Secret, avoiding hardcoding any credentials in the workflow.
 
 ---
+## 🧪 Apex Test Coverage
 
-##🧪 Apex Test Coverage
 The pipeline runs Apex tests and validates them using the RunLocalTests flag during deployment. Logs and results are available in GitHub Actions.
 
 ---
+## 📸 Screenshots
 
-##📸 Screenshots
 Add these after running the pipeline:
 
 ---
-
 GitHub Actions tab showing the running workflow
+<img width="1119" height="623" alt="GitHubActions" src="https://github.com/user-attachments/assets/ba90f30a-64e3-400d-9e0f-73e78ebcd770" />
+
+<img width="1207" height="824" alt="GitHub Actions Logs" src="https://github.com/user-attachments/assets/8b94c5a3-3a74-4059-b755-7988848c08d1" />
 
 Logs of successful deployment
+<img width="1107" height="240" alt="Classes deploying messages" src="https://github.com/user-attachments/assets/bba102b5-45f5-49f3-ad05-7374c7f1724b" />
+
 
 Apex test coverage or CLI output
+<img width="1004" height="543" alt="Apex Code Coverage" src="https://github.com/user-attachments/assets/b7b510a0-5bcd-4865-8e19-750aeffa171d" />
 
 ---
-
-📈 Benefits of this Setup
+## 📈 Benefits of this Setup
+ 
 ⏱️ Faster deployments and shorter release cycles
 
 🚫 Reduced manual errors
@@ -120,3 +94,42 @@ Add PMD static code analysis
 Add Slack notifications or deployment badges
 
 Multi-org support (Dev → QA → Prod)
+
+## ⚙️ GitHub Actions Workflow
+
+name: Deploy to Salesforce Sandbox
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v3
+
+    - name: Install Salesforce CLI (sf)
+      run: npm install @salesforce/cli --global
+
+    - name: Authenticate with SFDX URL
+      run: |
+        echo "${{ secrets.SFDX_AUTH_URL }}" > auth.txt
+        sf org login sfdx-url --sfdx-url-file auth.txt --alias sfdev --set-default
+
+    - name: Confirm SFDX Project Directory
+      run: |
+        cd ci-cd-project
+        ls
+        cat sfdx-project.json
+
+    - name: Deploy Metadata to Salesforce Sandbox
+      run: |
+        cd ci-cd-project
+        sf project deploy start --source-dir force-app --target-org sfdev --test-level RunLocalTests --verbose
+
+----
+
+

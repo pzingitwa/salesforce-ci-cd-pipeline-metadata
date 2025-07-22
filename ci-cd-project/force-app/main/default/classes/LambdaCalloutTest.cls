@@ -63,29 +63,39 @@ public class LambdaCalloutTest {
         System.assert(true, 'sendToLambda method executed successfully');
     }
     
-    @isTest
-    static void testSendToLambdaWithHttpException() {
-        // Test error handling
-        Case testCase = new Case(
-            Subject = 'Test Case Error',
-            Status = 'New',
-            Origin = 'Phone'
-        );
-        insert testCase;
-        
-        Test.startTest();
-        
-        // Don't set a mock to simulate a callout exception
-        // This will test the @future method's error handling
-        
-        try {
-            LambdaCallout.sendToLambda(testCase.Id);
-            Test.stopTest();
-        } catch (Exception e) {
-            Test.stopTest();
-            // Expected behavior - callout will fail in test context without mock
-        }
-        
-        System.assert(true, 'Exception handling test completed');
+ @isTest
+static void testSendToLambdaWithHttpException() {
+    // Create test data
+    Case testCase = new Case(
+        Subject = 'Test Case Error',
+        Status = 'New',
+        Origin = 'Phone'
+    );
+    insert testCase;
+    
+    // Set up mock for failed callout
+    Test.setMock(HttpCalloutMock.class, new MockHttpFailureResponse());
+    
+    Test.startTest();
+    LambdaCallout.sendToLambda(testCase.Id); // Will run synchronously in test context
+    Test.stopTest();
+    
+    // Verify error was logged via Case comments
+    List<CaseComment> comments = [SELECT CommentBody FROM CaseComment 
+                                WHERE ParentId = :testCase.Id
+                                ORDER BY CreatedDate DESC LIMIT 1];
+    System.assert(!comments.isEmpty(), 'Error comment should be created');
+    System.assert(comments[0].CommentBody.contains('500'),
+                'Comment should contain error status');
+}
+
+private class MockHttpFailureResponse implements HttpCalloutMock {
+    public HTTPResponse respond(HTTPRequest req) {
+        HttpResponse res = new HttpResponse();
+        res.setStatusCode(500);
+        res.setStatus('Server Error');
+        res.setBody('{"error":"Internal Server Error"}');
+        return res;
     }
+}
 }

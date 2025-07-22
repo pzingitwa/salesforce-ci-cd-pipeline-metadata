@@ -9,17 +9,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v2
+    - name: Checkout source
+      uses: actions/checkout@v3
 
-      - name: Install Salesforce CLI
-        run: npm install sfdx-cli --global
+    - name: Install Salesforce CLI (sf)
+      run: npm install @salesforce/cli --global
 
-      - name: Authenticate to Salesforce
-        run: |
-          echo "${{ secrets.SFDX_AUTH_URL }}" > auth-url.txt
-          sfdx auth:sfdxurl:store -f auth-url.txt -a sfdev
+    - name: Authenticate with SFDX URL
+      run: |
+        echo "${{ secrets.SFDX_AUTH_URL }}" > auth.txt
+        sf org login sfdx-url --sfdx-url-file auth.txt --alias sfdev --set-default
 
-      - name: Deploy to Sandbox
-        run: |
-          sfdx force:source:deploy -p force-app -u sfdev --testlevel RunLocalTests
+    - name: Confirm SFDX Project Directory
+      run: |
+        cd ci-cd-project
+        ls
+        cat sfdx-project.json
+
+    - name: Deploy Metadata to Salesforce Sandbox
+      run: |
+        cd ci-cd-project
+        sf project deploy start --source-dir force-app --target-org sfdev --test-level RunLocalTests --verbose
